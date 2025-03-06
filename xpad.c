@@ -95,6 +95,7 @@
 #define MAP_SELECT_BUTTON		(1 << 3)
 #define MAP_PADDLES			(1 << 4)
 #define MAP_PROFILE_BUTTON		(1 << 5)
+#define MAP_FLYDIGI_BUTTONS		(1 << 6)
 
 #define DANCEPAD_MAP_CONFIG	(MAP_DPAD_TO_BUTTONS |			\
 				MAP_TRIGGERS_TO_BUTTONS | MAP_STICKS_TO_NULL)
@@ -428,6 +429,19 @@ static const struct xpad_device {
 	{ 0x0000, 0x0000, "Generic X-Box pad", 0, XTYPE_UNKNOWN }
 };
 
+// A "flavor" is an aftermarket variant of an existing model supporting
+// additional features.
+static const struct xpad_flavor {
+	u16 idVendor;
+	u16 idProduct;
+	char *product;
+	u8 mapping;
+} xpad_flavor[] = {
+	{ 0x045e, 0x028e, "Flydigi VADER3", MAP_PADDLES | MAP_FLYDIGI_BUTTONS },
+	{ 0x045e, 0x028e, "Flydigi VADER4", MAP_PADDLES | MAP_FLYDIGI_BUTTONS },
+	{ 0x0000, 0x0000, NULL, 0 }
+};
+
 /* buttons shared with xbox and xbox360 */
 static const signed short xpad_common_btn[] = {
 	BTN_A, BTN_B, BTN_X, BTN_Y,			/* "analog" buttons */
@@ -489,6 +503,13 @@ static const signed short xpad_btn_paddles[] = {
 static const struct {int x; int y; } dpad_mapping[] = {
 	{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1},
 	{0, 0}
+};
+
+/* used for extra buttons in addition to paddles on Flydigi Vader Pro 3*/
+static const signed short xpad_btn_extra[] = {
+	BTN_TRIGGER_HAPPY9, BTN_TRIGGER_HAPPY10, /* Z, C face buttons */
+	KEY_RECORD,			/* circle */
+	-1						/* terminating entry */
 };
 
 /*
@@ -1022,6 +1043,18 @@ static void xpad360_process_packet(struct usb_xpad *xpad, struct input_dev *dev,
 		input_report_abs(dev, ABS_Z, data[4]);
 		input_report_abs(dev, ABS_RZ, data[5]);
 	}
+
+	/* Additional buttons for Flydigi Vader Pro 3 presenting as 360 pad. */
+	if (xpad->mapping & MAP_FLYDIGI_BUTTONS) {
+		input_report_key(dev, BTN_TRIGGER_HAPPY10, data[19] & BIT(0));   // C
+		input_report_key(dev, BTN_TRIGGER_HAPPY9, data[19] & BIT(1));  // Z
+		input_report_key(dev, BTN_TRIGGER_HAPPY8, data[19] & BIT(3));   // Leftmost paddle (M2)
+		input_report_key(dev, BTN_TRIGGER_HAPPY7, data[19] & BIT(5));   // Second to leftmost (M4)
+		input_report_key(dev, BTN_TRIGGER_HAPPY5, data[19] & BIT(4));   // Second to rightmost (M3)
+		input_report_key(dev, BTN_TRIGGER_HAPPY6, data[19] & BIT(2));   // Rightmost paddle (M1)
+		input_report_key(dev, KEY_RECORD, data[20] & BIT(0));  // Circle
+	}
+
 
 	input_sync(dev);
 
@@ -2256,6 +2289,13 @@ static int xpad_init_input(struct usb_xpad *xpad)
 		for (i = 0; xpad_btn_paddles[i] >= 0; i++)
 			input_set_capability(input_dev, EV_KEY, xpad_btn_paddles[i]);
 	}
+ 
+	/* set up extra face buttons if the controller has them */
+	if (xpad->mapping & MAP_FLYDIGI_BUTTONS) {
+		for (i = 0; xpad_btn_extra[i] >= 0; i++) {
+			input_set_capability(input_dev, EV_KEY, xpad_btn_extra[i]);
+		}
+	}
 
 	/*
 	 * This should be a simple else block. However historically
@@ -2311,7 +2351,7 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 	struct usb_device *udev = interface_to_usbdev(intf);
 	struct usb_xpad *xpad;
 	struct usb_endpoint_descriptor *ep_irq_in, *ep_irq_out;
-	int i, error;
+	int i, j, error;
 
 	if (intf->cur_altsetting->desc.bNumEndpoints != 2)
 		return -ENODEV;
@@ -2345,6 +2385,19 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 	xpad->udev = udev;
 	xpad->intf = intf;
 	xpad->mapping = xpad_device[i].mapping;
+
+	if (udev->product) {
+		for(j = 0; xpad_flavor[j].idVendor; j++) {
+			if ((xpad_device[i].idVendor == xpad_flavor[j].idVendor) && 
+					(xpad_device[i].idProduct == xpad_flavor[j].idVendor)) {
+				if (!strcmp(udev->product, xpad_flavor[j].product)) {
+					xpad->mapping |= xpad_flavor[j].mapping;
+					break;
+				}
+			}
+		}
+	}
+
 	xpad->xtype = xpad_device[i].xtype;
 	xpad->name = xpad_device[i].name;
 	xpad->quirks = xpad_device[i].quirks;
