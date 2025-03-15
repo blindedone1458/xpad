@@ -2386,7 +2386,7 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 	xpad->intf = intf;
 	xpad->mapping = xpad_device[i].mapping;
 
-	pr_warn("%s:: checking for xpad flavor\n", KBUILD_MODNAME);
+	pr_warn("%s:: checking for xpad flavor of udev->product: %s\n", KBUILD_MODNAME, udev->product);
 	if (udev->product) {
 		
 		for(j = 0; xpad_flavor[j].idVendor; j++) {
