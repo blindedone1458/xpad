@@ -2387,12 +2387,12 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 	xpad->mapping = xpad_device[i].mapping;
 
 	if (udev->product) {
-		printk(KERN_INFO, "%s:: checking for xpad flavor\n", KBUILD_MODNAME);
+		pr_warn("%s:: checking for xpad flavor\n", KBUILD_MODNAME);
 		for(j = 0; xpad_flavor[j].idVendor; j++) {
 			if ((xpad_device[i].idVendor == xpad_flavor[j].idVendor) && 
 					(xpad_device[i].idProduct == xpad_flavor[j].idVendor)) {
 				if (!strcmp(udev->product, xpad_flavor[j].product)) {
-					printk(KERN_INFO, "%s:: loaded xpad flavor: %s\n", KBUILD_MODNAME, xpad_flavor[j].product);
+					pr_warn("%s:: loaded xpad flavor: %s\n", KBUILD_MODNAME, xpad_flavor[j].product);
 					xpad->mapping |= xpad_flavor[j].mapping;
 					break;
 				}
