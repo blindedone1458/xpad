@@ -2400,6 +2400,10 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 	xpad->mapping = xpad_device[i].mapping;
 
 	if (udev->product) {
+		pr_warn("%s:: detected xpad controller product: %s\n", KBUILD_MODNAME, udev->product);
+		pr_warn("%s::     idVendor: %s\n", KBUILD_MODNAME, xpad_device[i].idVendor);
+		pr_warn("%s::     idProduct: %s\n", KBUILD_MODNAME, xpad_device[i].idProduct);
+		
 		for(j = 0; xpad_flavor[j].idVendor; j++) {
 			if ((xpad_device[i].idVendor == xpad_flavor[j].idVendor) && 
 					(xpad_device[i].idProduct == xpad_flavor[j].idProduct)) {
