@@ -62,6 +62,7 @@
  */
 
 // #define DEBUG
+#include <linux/version.h>
 #include <linux/bits.h>
 #include <linux/kernel.h>
 #include <linux/input.h>
@@ -72,6 +73,11 @@
 #include <linux/usb/input.h>
 #include <linux/usb/quirks.h>
 #include <linux/timer.h>
+
+// backward compatibility. del_timer_sync is renamed to timer_delete_sync since 6.15.0
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,15,0)
+#define timer_delete_sync del_timer_sync
+#endif
 
 // enable compilation on pre 6.1 kernels
 #ifndef ABS_PROFILE
@@ -592,6 +598,7 @@ static const struct usb_device_id xpad_table[] = {
 	XPAD_XBOX360_VENDOR(0x2563),		/* OneXPlayer Gamepad */
 	XPAD_XBOX360_VENDOR(0x260d),		/* Dareu H101 */
        XPAD_XBOXONE_VENDOR(0x294b),            /* Snakebyte */
+	XPAD_XBOXONE_VENDOR(0x2c16),		/* Surge Controllers */
 	XPAD_XBOX360_VENDOR(0x2c22),		/* Qanba Controllers */
 	XPAD_XBOX360_VENDOR(0x2dc8),            /* 8BitDo Pro 2 Wired Controller */
 	XPAD_XBOXONE_VENDOR(0x2dc8),		/* 8BitDo Pro 2 Wired Controller for Xbox */
@@ -2580,7 +2587,7 @@ static void xpad_disconnect(struct usb_interface *intf)
 
 	if (xpad->quirks & QUIRK_GHL_XBOXONE) {
 		usb_free_urb(xpad->ghl_urb);
-		del_timer_sync(&xpad->ghl_poke_timer);
+		timer_delete_sync(&xpad->ghl_poke_timer);
 	}
 
 	usb_free_coherent(xpad->udev, XPAD_PKT_LEN,
