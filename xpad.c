@@ -1015,15 +1015,27 @@ static void xpad360_process_packet(struct usb_xpad *xpad, struct input_dev *dev,
 	input_report_key(dev, BTN_START,  data[2] & BIT(4));
 	input_report_key(dev, BTN_SELECT, data[2] & BIT(5));
 
-	/* stick press left/right */
-	input_report_key(dev, BTN_THUMBL, data[2] & BIT(6));
-	input_report_key(dev, BTN_THUMBR, data[2] & BIT(7));
+	/* Remapped buttons for Flydigi Vader Pro 3 presenting as 360 pad. */
+	if (xpad->mapping & MAP_FLYDIGI_BUTTONS) {
+		input_report_key(dev, BTN_THUMBL, (data[19] & BIT(0)) | (data[2] & BIT(6)));   // C
+		input_report_key(dev, BTN_THUMBR, (data[19] & BIT(1)) | (data[2] & BIT(7)));  // Z
+		input_report_key(dev, BTN_X, (data[19] & BIT(3)) | (data[3] & BIT(6)));   // Leftmost paddle (M2)
+		input_report_key(dev, BTN_Y, (data[19] & BIT(5)) | (data[3] & BIT(7)));   // Second to leftmost (M4)
+		input_report_key(dev, BTN_A, (data[19] & BIT(4)) | (data[3] & BIT(4)));   // Second to rightmost (M3)
+		input_report_key(dev, BTN_B, (data[19] & BIT(2)) | (data[3] & BIT(5)));   // Rightmost paddle (M1)
+		input_report_key(dev, KEY_RECORD, data[20] & BIT(0));  // Circle
+	} else {
+		/* stick press left/right */
+		input_report_key(dev, BTN_THUMBL, data[2] & BIT(6));
+		input_report_key(dev, BTN_THUMBR, data[2] & BIT(7));
 
-	/* buttons A,B,X,Y,TL,TR and MODE */
-	input_report_key(dev, BTN_A,	data[3] & BIT(4));
-	input_report_key(dev, BTN_B,	data[3] & BIT(5));
-	input_report_key(dev, BTN_X,	data[3] & BIT(6));
-	input_report_key(dev, BTN_Y,	data[3] & BIT(7));
+		/* buttons A,B,X,Y,TL,TR and MODE */
+		input_report_key(dev, BTN_A,	data[3] & BIT(4));
+		input_report_key(dev, BTN_B,	data[3] & BIT(5));
+		input_report_key(dev, BTN_X,	data[3] & BIT(6));
+		input_report_key(dev, BTN_Y,	data[3] & BIT(7));
+	}
+
 	input_report_key(dev, BTN_TL,	data[3] & BIT(0));
 	input_report_key(dev, BTN_TR,	data[3] & BIT(1));
 	input_report_key(dev, BTN_MODE,	data[3] & BIT(2));
@@ -1052,21 +1064,14 @@ static void xpad360_process_packet(struct usb_xpad *xpad, struct input_dev *dev,
 	}
 
 	/* Additional buttons for Flydigi Vader Pro 3 presenting as 360 pad. */
-	if (xpad->mapping & MAP_FLYDIGI_BUTTONS) {
+	// if (xpad->mapping & MAP_FLYDIGI_BUTTONS) {
 		// input_report_key(dev, BTN_TRIGGER_HAPPY10, data[19] & BIT(0));   // C
 		// input_report_key(dev, BTN_TRIGGER_HAPPY9, data[19] & BIT(1));  // Z
 		// input_report_key(dev, BTN_TRIGGER_HAPPY8, data[19] & BIT(3));   // Leftmost paddle (M2)
 		// input_report_key(dev, BTN_TRIGGER_HAPPY7, data[19] & BIT(5));   // Second to leftmost (M4)
 		// input_report_key(dev, BTN_TRIGGER_HAPPY5, data[19] & BIT(4));   // Second to rightmost (M3)
 		// input_report_key(dev, BTN_TRIGGER_HAPPY6, data[19] & BIT(2));   // Rightmost paddle (M1)
-		input_report_key(dev, BTN_THUMBL, data[19] & BIT(0));   // C
-		input_report_key(dev, BTN_THUMBR, data[19] & BIT(1));  // Z
-		input_report_key(dev, BTN_X, data[19] & BIT(3));   // Leftmost paddle (M2)
-		input_report_key(dev, BTN_Y, data[19] & BIT(5));   // Second to leftmost (M4)
-		input_report_key(dev, BTN_A, data[19] & BIT(4));   // Second to rightmost (M3)
-		input_report_key(dev, BTN_B, data[19] & BIT(2));   // Rightmost paddle (M1)
-		input_report_key(dev, KEY_RECORD, data[20] & BIT(0));  // Circle
-	}
+	// }
 
 
 	input_sync(dev);
