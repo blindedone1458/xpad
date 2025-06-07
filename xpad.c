@@ -2399,17 +2399,19 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 	xpad->intf = intf;
 	xpad->mapping = xpad_device[i].mapping;
 
+	char *xpad_name = xpad_device[i].name;
+
 	if (udev->product) {
 		pr_warn("%s:: detected xpad controller product: %s\n", KBUILD_MODNAME, udev->product);
 		pr_warn("%s::     idVendor: %s\n", KBUILD_MODNAME, xpad_device[i].idVendor);
 		pr_warn("%s::     idProduct: %s\n", KBUILD_MODNAME, xpad_device[i].idProduct);
-		
+
 		for(j = 0; xpad_flavor[j].idVendor; j++) {
 			if ((xpad_device[i].idVendor == xpad_flavor[j].idVendor) && 
 					(xpad_device[i].idProduct == xpad_flavor[j].idProduct)) {
 				if (!strcmp(udev->product, xpad_flavor[j].product)) {
 					pr_warn("%s:: loaded xpad flavor: %s\n", KBUILD_MODNAME, xpad_flavor[j].product);
-					xpad_device[i].name = xpad_flavor[j].product;
+					xpad_name = xpad_flavor[j].product;
 					xpad->mapping |= xpad_flavor[j].mapping;
 					break;
 				}
@@ -2418,7 +2420,7 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 	}
 
 	xpad->xtype = xpad_device[i].xtype;
-	xpad->name = xpad_device[i].name;
+	xpad->name = xpad_name;
 	xpad->quirks = xpad_device[i].quirks;
 	xpad->packet_type = PKT_XB;
 	INIT_WORK(&xpad->work, xpad_presence_work);
